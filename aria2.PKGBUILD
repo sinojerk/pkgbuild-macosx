@@ -46,8 +46,8 @@ package() {
   make DESTDIR="$pkgdir" install
 
   # add bash completion
-  install -d "$pkgdir"/usr/share/bash-completion/completions
-  install -m644 "$pkgdir"/usr/share/doc/aria2/bash_completion/aria2c \
-    "$pkgdir"/usr/share/bash-completion/completions
-  rm -rf "$pkgdir"/usr/share/doc/aria2/bash_completion
+  install -d "$pkgdir"/usr/local/share/bash-completion/completions
+  install -m644 "$pkgdir"/usr/local/share/doc/aria2/bash_completion/aria2c \
+    "$pkgdir"/usr/local/share/bash-completion/completions
+  rm -rf "$pkgdir"/usr/local/share/doc/aria2/bash_completion
 }
