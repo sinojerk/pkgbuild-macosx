@@ -1,0 +1,14 @@
+xcode_sdkroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk
+prefix=${xcode_sdkroot}/usr
+exec_prefix=/usr
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+major_version=5
+version=5.7.20081102
+
+Name: ncursesw
+Description: ncurses 5.7 library
+Version: ${version}
+Requires:
+Libs: -L${libdir} -lncurses
+Cflags:

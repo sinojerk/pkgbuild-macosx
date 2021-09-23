@@ -1,0 +1,12 @@
+xcode_sdkroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk
+prefix=${xcode_sdkroot}/usr
+exec_prefix=/usr
+libdir=${exec_prefix}/lib
+toolexeclibdir=${libdir}
+includedir=${prefix}/include/ffi
+
+Name: libffi
+Description: Library supporting Foreign Function Interfaces
+Version: 3.3-rc0
+Libs: -L${toolexeclibdir} -lffi
+Cflags: -I${includedir}

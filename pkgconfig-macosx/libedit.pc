@@ -1,0 +1,12 @@
+xcode_sdkroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk
+prefix=${xcode_sdkroot}/usr
+exec_prefix=/usr
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libedit
+Description: command line editor library provides generic line editing, history, and tokenization functions.
+Version: 3.0
+Requires:
+Libs: -L${libdir} -ledit
+Cflags: -I${includedir}/editline

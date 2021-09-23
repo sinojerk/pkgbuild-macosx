@@ -1,0 +1,9 @@
+#!/bin/sh
+if [ "$UID" = '0' ]; then
+    echo 'Oops, you are running as root!'
+    exit 1
+fi
+
+LOCAL_DIR=${PREFIX:-"/usr/local"}
+yourid="$UID"
+sudo install -g admin -o "$yourid" -d "$LOCAL_DIR"/{Frameworks,bin,etc,include,lib,libexec,opt,sbin,share,var} 

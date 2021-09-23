@@ -1,0 +1,87 @@
+#!/bin/sh
+PKG_ROOT="$(echo "${PREFIX:-"/usr/local"}"|sed -nE "s/\/*$//p")"
+
+_list_pkgs() {
+    if [ "$1" ]; then
+        bom="$(ls -1 "${PKG_ROOT}"/var/db/receipts/*-*.bom|awk '/'"$1"'-.*\.bom/{print;exit}')"
+        if [ "$bom" ]; then
+            lsbom -s -flbc "$bom"|sed -nE 's|\./|/usr/local/|p'
+        else
+            echo "$1 is not exist." >&2
+            exit 1
+        fi
+    else
+        ls "${PREFIX:-"/usr/local"}"/var/db/receipts|sed -nE "s|-([^-]+)\.bom| \1|p"|xargs printf "%-24s%s\n"
+    fi
+}
+
+BLUE_C='\033[0;34m'
+ORANGE_C='\033[0;33m'
+NC_C='\033[0m'
+
+_rm_pkg() {
+  bom="$(ls -1 "${PKG_ROOT}"/var/db/receipts/*-*.bom|awk '/'"$1"'-.*\.bom/{print;exit}')"
+  if [ "$bom" ]; then
+    _rm_files_using_bom "$bom"
+  else
+    echo "$1 is not exist." >&2
+    exit 1
+  fi
+}
+
+_rm_files_using_bom(){
+  if [ ! -f "$1" ]; then
+    echo "file: $1 is not exist." >&2
+    exit 1
+  fi
+
+  files=`lsbom -s -flbc "$bom"|sed -nE "/\.\/[^\/]+/ s|\./|${PKG_ROOT}/|p"`
+
+  echo "${BLUE_C}==>delete files${NC_C}"
+  echo "$files"|
+  while read -r k;do
+    [[ -f "$k" || -L "$k" ]] && rm "$k" && echo "rm: $k"
+  done
+
+  echo "${BLUE_C}==>cleanup directories${NC_C}"
+  echo "$files"|
+  sed -nE 's|/[^/]+$||p'|
+  sort -ur|
+  while read -r k;do
+    if [ -d "$k" ]; then
+      if [ "`ls -qA "$k"`" ]; then
+        echo "${ORANGE_C}rm:${NC_C} $k: not empty"
+      else
+        rm -fd "$k" && echo "rm: ${k}/"
+      fi
+    fi
+  done
+  rm -f "$bom"
+}
+
+
+usage() {
+    SCRIPTNAME="${0##*/}"
+    echo "usage:"
+    echo "  $SCRIPTNAME ls"
+    echo "  $SCRIPTNAME list"
+    echo "  $SCRIPTNAME rm pkg"
+    echo "  $SCRIPTNAME uninstall pkg"
+}
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        ls|list)
+            _list_pkgs $2
+            exit
+            ;;
+        rm|uninstall)
+            _rm_pkg "$2" 
+            exit
+            ;;
+        *)
+            usage
+            exit
+            ;;
+    esac
+done
+usage

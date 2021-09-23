@@ -1,0 +1,74 @@
+#!/bin/zsh
+PKGBUILD=${1:-"PKGBUILD"}
+if [ ! -f "$PKGBUILD" ]; then
+    echo "PKGBUILD file not to find." >&2
+    exit 1
+fi
+PKGROOT='/usr/local/tmp/PKGROOT'
+if [ ! -d "$PKGROOT" ]; then
+    rm -rf "$PKGROOT"
+    mkdir -p "$PKGROOT"
+fi
+. "$PKGBUILD"
+pkgdir="$PKGROOT/$pkgname-$pkgver"
+
+for u in "${source[@]}"; do
+    name=`basename "$u"`
+    if [ ! -f "$name" ]; then
+        curl -LO $u
+    fi
+done
+
+
+if [ "$sha256sums" ]; then
+    shasum="${sha256sums[@]}"
+else 
+    shasum="${sha512sums[@]}" 
+fi
+
+filelist="$(echo "${source[@]}"|xargs -I {} basename "{}")"
+paste -d ":" <(print -l $shasum) <(print -l "$filelist")|sed -nE "s|:|  |p"|shasum -c
+if [ $? -ne 0 ]; then
+    echo "file verification failed." >&2
+    exit 2
+fi
+
+echo "$filelist"|sed -nE "/tar\..*$/p" | while read -r tar; do
+    tar -xf "$tar"
+done
+
+if [[ `type build_universal` == *function* ]]; then
+build_universal
+if [ $? -ne 0 ]; then
+    echo 'build failed.' >&2
+    exit 3
+fi
+
+package_universal
+if [ $? -ne 0 ]; then
+    echo 'package failed.' >&2
+    exit 3
+fi
+
+else
+
+export \
+  CC="xcrun clang -arch arm64 -arch x86_64" \
+  CXX="xcrun clang++ -arch arm64 -arch x86_64" \
+  CPP="xcrun clang -E" \
+  CXXCPP="xcrun clang++ -E"
+
+build
+if [ $? -ne 0 ]; then
+    echo 'build failed.' >&2
+    exit 3
+fi
+
+package
+if [ $? -ne 0 ]; then
+    echo 'package failed.' >&2
+    exit 3
+fi
+
+unset CC CXX CPP CXXCPP
+fi
