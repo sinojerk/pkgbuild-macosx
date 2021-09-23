@@ -1,7 +1,7 @@
 
 # PKGBUILD-MACOSX
 #### Arch Linux (pacman)style PKGBUILD files for macosx
-now, it can only to build universal(arm64,x86_64) pkg, mkpkg need more work to improve.
+now, it can only to build universal(arm64,x86_64) pkg, then `mkpkg` script need more work to improve.
 ## how to use
 0. install Xcode
 1. make some necessary directories in "/usr/local"
