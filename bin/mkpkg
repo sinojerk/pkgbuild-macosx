@@ -4,7 +4,7 @@ if [ ! -f "$PKGBUILD" ]; then
     echo "PKGBUILD file not to find." >&2
     exit 1
 fi
-PKGROOT='/usr/local/tmp/PKGROOT'
+PKGROOT="${PREFIX:-/usr/local}/tmp/PKGROOT"
 if [ ! -d "$PKGROOT" ]; then
     rm -rf "$PKGROOT"
     mkdir -p "$PKGROOT"
