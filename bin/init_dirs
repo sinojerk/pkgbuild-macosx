@@ -6,4 +6,4 @@ fi
 
 LOCAL_DIR=${PREFIX:-"/usr/local"}
 yourid="$UID"
-sudo install -g admin -o "$yourid" -d "$LOCAL_DIR"/{Frameworks,bin,etc,include,lib,libexec,opt,sbin,share,var} 
+sudo install -g admin -o "$yourid" -d "$LOCAL_DIR"/{Frameworks,bin,etc,include,lib,libexec,opt,sbin,share,var{,/db/receipts}} 
