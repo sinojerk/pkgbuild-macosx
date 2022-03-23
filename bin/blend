@@ -1,32 +1,33 @@
 #!/bin/sh
-PKG_ROOT="$(echo "${PREFIX:-"/usr/local"}"|sed -nE "s/\/*$//p")"
-
-_list_pkgs() {
-    if [ "$1" ]; then
-        bom="$(ls -1 "${PKG_ROOT}"/var/db/receipts/*-*.bom|awk '/'"$1"'-.*\.bom/{print;exit}')"
-        if [ "$bom" ]; then
-            lsbom -s -flbc "$bom"|sed -nE 's|\./|/usr/local/|p'
-        else
-            echo "$1 is not exist." >&2
-            exit 1
-        fi
-    else
-        ls "${PREFIX:-"/usr/local"}"/var/db/receipts|sed -nE "s|-([^-]+)\.bom| \1|p"|xargs printf "%-24s%s\n"
-    fi
-}
 
 BLUE_C='\033[0;34m'
 ORANGE_C='\033[0;33m'
 NC_C='\033[0m'
 
+SCRIPT_BIN_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+PKG_ROOT="$(echo "${BLEND_PREFIX:-"${SCRIPT_BIN_PATH%\/bin*}"}"|sed -nE "s/\/*$//p")"
+
+_get_bom_filepath() {
+	[ -z "$1" ] && return 1
+	ls -1 "${PKG_ROOT}"/var/db/receipts/*-*.bom|grep "$1-.*\.bom" || echo "pkg $1 is not exist." >&2
+}
+
+_list_pkgs() {
+    if [ "$1" ]; then
+		if bom=$(_get_bom_filepath $1) 
+		then
+            lsbom -s -flbc "$bom"|sed -nE 's|\./|'${PKG_ROOT}'/|p'
+        fi
+    else
+        ls "${PKG_ROOT}"/var/db/receipts|sed -nE "s|-([^-]+)\.bom| \1|p"|xargs printf "%-24s%s\n"
+    fi
+}
+
 _rm_pkg() {
-  bom="$(ls -1 "${PKG_ROOT}"/var/db/receipts/*-*.bom|awk '/'"$1"'-.*\.bom/{print;exit}')"
-  if [ "$bom" ]; then
-    _rm_files_using_bom "$bom"
-  else
-    echo "$1 is not exist." >&2
-    exit 1
-  fi
+	if bom=$(_get_bom_filepath $1);
+	then
+		_rm_files_using_bom "$bom"
+	fi
 }
 
 _rm_files_using_bom(){
@@ -59,29 +60,67 @@ _rm_files_using_bom(){
   rm -f "$bom"
 }
 
+_export_pkg() {
+	if [ -z "$1" ]; then usage; exit 1; fi
+
+	bom=$(_get_bom_filepath $1)
+
+	if [ -z "$bom" ]; then exit 1; fi
+	name_version=$(basename $bom|sed 's|\.bom||g')
+
+	lsbom -s -flbc "$bom"| \
+		sed 's|^\.\/||g'|grep -v '^\.$'| \
+		tar -T - -C "${PKG_ROOT}" -cJf "${PKG_ROOT}/tmp/${name_version}.tar.xz"
+}
+
+_installpkg_dir() {
+    if [ ! -d "$1" ]; then
+        echo "dir: $1 is not exist" >&2
+        exit 2;
+    fi
+
+	[ ! -d "${PKG_ROOT}/var/db/receipts" ] && mkdir -p "${PKG_ROOT}/var/db/receipts"
+	mkbom "${1}" "${PKG_ROOT}/var/db/receipts/`basename $1`.bom"
+	rsync -a "${1}"/* ${PKG_ROOT}
+}
+
 
 usage() {
     SCRIPTNAME="${0##*/}"
     echo "usage:"
     echo "  $SCRIPTNAME ls"
     echo "  $SCRIPTNAME list"
+    echo "  $SCRIPTNAME add pkg"
+    echo "  $SCRIPTNAME install pkg"
     echo "  $SCRIPTNAME rm pkg"
     echo "  $SCRIPTNAME uninstall pkg"
+    echo "  $SCRIPTNAME export pkg"
 }
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        ls|list)
-            _list_pkgs $2
-            exit
-            ;;
-        rm|uninstall)
-            _rm_pkg "$2" 
-            exit
-            ;;
-        *)
-            usage
-            exit
-            ;;
-    esac
-done
-usage
+
+if [ $# -lt 1 ]; then
+	usage
+	exit -1
+fi
+
+case "$1" in
+	ls|list)
+		_list_pkgs $2
+		exit
+		;;
+	add|install)
+		_installpkg_dir "$2"
+		exit
+		;;
+	rm|uninstall)
+		_rm_pkg "$2" 
+		exit
+		;;
+	export)
+		_export_pkg "$2"
+		exit
+		;;
+	*)
+		usage
+		exit
+		;;
+esac
